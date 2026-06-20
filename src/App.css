@@ -1,0 +1,252 @@
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8%;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e6df;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.logo {
+  color: #23362b;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.navigation a {
+  color: #34453a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.navigation a:hover {
+  color: #477456;
+}
+
+.hero {
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  padding: 80px 10%;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(32, 61, 41, 0.92) 0%,
+      rgba(46, 81, 56, 0.78) 48%,
+      rgba(104, 133, 99, 0.3) 100%
+    ),
+    url("https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1800&q=80")
+      center / cover no-repeat;
+  color: #ffffff;
+}
+
+.hero-content {
+  max-width: 650px;
+}
+
+.eyebrow {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 650px;
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 1.05;
+}
+
+.hero-description {
+  max-width: 550px;
+  margin: 24px 0 34px;
+  font-size: 1.12rem;
+  line-height: 1.7;
+}
+
+.primary-button {
+  display: inline-block;
+  padding: 14px 24px;
+  background-color: #ffffff;
+  color: #294333;
+  border-radius: 4px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.products-section {
+  padding: 80px 8%;
+  background-color: #f7f8f4;
+}
+
+.section-heading {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.section-heading p {
+  margin: 0 0 8px;
+  color: #64806c;
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: #25372c;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.7rem;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  max-width: 1250px;
+  margin: 0 auto;
+}
+
+.product-card {
+  overflow: hidden;
+  background-color: #ffffff;
+  border: 1px solid #e1e5de;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(34, 54, 42, 0.08);
+}
+
+.product-image {
+  min-height: 290px;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background-color: #dfe8da;
+  color: #657368;
+}
+
+.product-information {
+  padding: 24px;
+}
+
+.product-category {
+  margin: 0 0 8px;
+  color: #718077;
+  font-size: 0.78rem;
+  font-weight: bold;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.product-card h3 {
+  margin: 0;
+  color: #283b30;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.45rem;
+}
+
+.product-price {
+  margin: 18px 0;
+  color: #31573e;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.product-card button {
+  width: 100%;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 5px;
+  background-color: #315d40;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: bold;
+}
+
+.product-card button:hover {
+  background-color: #264a33;
+}
+
+.care-section {
+  min-height: 350px;
+  display: flex;
+  align-items: center;
+  padding: 70px 10%;
+  background-color: #dce7d7;
+  color: #294032;
+}
+
+.care-section div {
+  max-width: 650px;
+}
+
+.care-section h2 {
+  margin: 0 0 18px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.8rem;
+}
+
+.care-section p {
+  line-height: 1.7;
+}
+
+.footer {
+  padding: 45px 8%;
+  background-color: #203329;
+  color: #ffffff;
+  text-align: center;
+}
+
+.footer h2 {
+  margin: 0 0 10px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.footer p {
+  margin: 0;
+  color: #cbd6ce;
+}
+
+@media (max-width: 850px) {
+  .header {
+    flex-direction: column;
+    gap: 18px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .navigation {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .hero {
+    min-height: 500px;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
