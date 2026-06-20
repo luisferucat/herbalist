@@ -1,89 +1,44 @@
 import { useState } from "react";
-import {
-  Link,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase.js";
 
 export default function Login() {
   const navigate = useNavigate();
-    const location = useLocation();
+  const location = useLocation();
 
-    const destination =
-    location.state?.from || "/";
-  const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const redirectTo = location.state?.from?.pathname || "/";
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    setMessage("");
-    setIsError(false);
-    setIsLoading(true);
+    if (isLoggingIn) return;
 
-    const formData = new FormData(event.currentTarget);
+    setIsLoggingIn(true);
+    setErrorMessage("");
 
-    const email = formData.get("email").trim();
-    const password = formData.get("password");
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
       password,
     });
 
-    setIsLoading(false);
+    setIsLoggingIn(false);
 
     if (error) {
-      setIsError(true);
-
-      if (error.message.toLowerCase().includes("invalid login credentials")) {
-        setMessage("El correo o la contraseña son incorrectos.");
-      } else if (
-        error.message.toLowerCase().includes("email not confirmed")
-      ) {
-        setMessage(
-          "Debes confirmar tu correo electrónico antes de iniciar sesión."
-        );
-      } else {
-        setMessage(error.message);
-      }
-
+      setErrorMessage(`No se pudo iniciar sesión: ${error.message}`);
       return;
     }
 
-    if (data.session) {
-      setMessage("Inicio de sesión exitoso.");
-
-      setTimeout(() => {
-        navigate(destination, {
-            replace: true,
-            });
-      }, 800);
-    }
+    navigate(redirectTo, { replace: true });
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: "50px",
-        backgroundColor: "#eef3e9",
-      }}
-    >
-      <Link to="/continuar-compra">← Volver</Link>
-
-      <section
-        style={{
-          maxWidth: "520px",
-          margin: "40px auto 0",
-          padding: "35px",
-          backgroundColor: "white",
-          borderRadius: "12px",
-          boxShadow: "0 6px 20px rgba(0, 0, 0, 0.08)",
-        }}
-      >
+    <main style={pageStyle}>
+      <section style={cardStyle}>
         <h1>Iniciar sesión</h1>
 
         <p>
@@ -91,82 +46,118 @@ export default function Login() {
           guardados.
         </p>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "20px" }}>
+        <form onSubmit={handleSubmit} style={formStyle}>
+          <div style={fieldStyle}>
             <label htmlFor="email">Correo electrónico</label>
 
             <input
               id="email"
-              name="email"
               type="email"
-              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               required
               style={inputStyle}
             />
           </div>
 
-          <div style={{ marginBottom: "20px" }}>
+          <div style={fieldStyle}>
             <label htmlFor="password">Contraseña</label>
 
             <input
               id="password"
-              name="password"
               type="password"
-              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               required
               style={inputStyle}
             />
           </div>
 
-          {message && (
-            <p
-              role="status"
-              style={{
-                padding: "12px",
-                borderRadius: "6px",
-                backgroundColor: isError ? "#fde8e8" : "#e5f3e8",
-                color: isError ? "#8a1c1c" : "#244d31",
-              }}
-            >
-              {message}
-            </p>
-          )}
+          {errorMessage && <p style={errorStyle}>{errorMessage}</p>}
 
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoggingIn}
             style={{
-              width: "100%",
-              padding: "14px",
-              border: "none",
-              borderRadius: "6px",
-              backgroundColor: "#315d40",
-              color: "white",
-              fontWeight: "bold",
-              cursor: isLoading ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.7 : 1,
+              ...buttonStyle,
+              opacity: isLoggingIn ? 0.7 : 1,
+              cursor: isLoggingIn ? "not-allowed" : "pointer",
             }}
           >
-            {isLoading ? "Iniciando sesión..." : "Iniciar sesión"}
+            {isLoggingIn ? "Iniciando sesión..." : "Iniciar sesión"}
           </button>
         </form>
 
-        <p style={{ marginTop: "25px", textAlign: "center" }}>
-          ¿No tienes una cuenta?{" "}
-          <Link to="/registro">Crear cuenta</Link>
+        <p style={forgotPasswordStyle}>
+          <Link to="/recuperar-password">¿Olvidaste tu contraseña?</Link>
         </p>
 
-        <p style={{ textAlign: "center" }}>
-          <Link to="/checkout">Continuar como invitado</Link>
+        <p style={centerTextStyle}>
+          ¿No tienes una cuenta? <Link to="/registro">Crear cuenta</Link>
+        </p>
+
+        <p style={centerTextStyle}>
+          <Link to="/checkout-invitado">Continuar como invitado</Link>
         </p>
       </section>
     </main>
   );
 }
 
+const pageStyle = {
+  minHeight: "100vh",
+  padding: "50px 20px",
+  backgroundColor: "#eef3e9",
+};
+
+const cardStyle = {
+  maxWidth: "620px",
+  margin: "0 auto",
+  padding: "45px",
+  backgroundColor: "white",
+  borderRadius: "12px",
+  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)",
+};
+
+const formStyle = {
+  marginTop: "25px",
+};
+
+const fieldStyle = {
+  marginBottom: "22px",
+};
+
 const inputStyle = {
   display: "block",
   width: "100%",
   marginTop: "8px",
+  padding: "13px",
+  boxSizing: "border-box",
+};
+
+const buttonStyle = {
+  width: "100%",
+  marginTop: "10px",
+  padding: "14px",
+  border: "none",
+  borderRadius: "6px",
+  backgroundColor: "#315d40",
+  color: "white",
+  fontWeight: "bold",
+};
+
+const forgotPasswordStyle = {
+  marginTop: "18px",
+  textAlign: "center",
+};
+
+const centerTextStyle = {
+  textAlign: "center",
+};
+
+const errorStyle = {
   padding: "12px",
+  borderRadius: "6px",
+  backgroundColor: "#fde8e8",
+  color: "#8a1c1c",
 };

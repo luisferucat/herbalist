@@ -24,7 +24,7 @@ export default function RecuperarPassword() {
     setMessage("");
     setErrorMessage("");
 
-    const redirectTo = `${window.location.origin}/actualizar-password`;
+    const redirectTo = "https://herbalist-theta.vercel.app/actualizar-password";
 
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo,
@@ -40,6 +40,7 @@ export default function RecuperarPassword() {
     setMessage(
       "Si el correo está registrado, recibirás un enlace para cambiar tu contraseña."
     );
+
     setEmail("");
   }
 
