@@ -1,41 +1,54 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { supabase } from "../lib/supabase.js";
 
+const PAYMENT_METHOD = "SINPE";
+const SINPE_PHONE = "8736-0393";
+const PAYMENT_RECEIPT_EMAIL = "herbalistplants@gmail.com";
+
 export default function Checkout() {
   const { cart, clearCart } = useCart();
   const { user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
 
-  const [isProcessing, setIsProcessing] =
-    useState(false);
-  const [errorMessage, setErrorMessage] =
-    useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const savedName =
-    user?.user_metadata?.name || "";
-
-  const savedPhone =
-    user?.user_metadata?.phone || "";
-
+  const savedName = user?.user_metadata?.name || "";
+  const savedPhone = user?.user_metadata?.phone || "";
   const savedEmail = user?.email || "";
 
   const estimatedTotal = cart.reduce(
-    (total, item) =>
-      total +
-      Number(item.price) * Number(item.quantity),
+    (total, item) => total + Number(item.price) * Number(item.quantity),
     0
   );
+
+  async function sendOrderEmail(order) {
+    try {
+      const response = await fetch("/api/send-order-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ order }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error("No se pudo enviar el correo del pedido:", result);
+      }
+    } catch (emailError) {
+      console.error("No se pudo enviar el correo del pedido:", emailError);
+    }
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (isProcessing) {
-      return;
-    }
+    if (isProcessing) return;
 
     if (!user) {
       navigate("/continuar-compra");
@@ -52,33 +65,19 @@ export default function Checkout() {
     setIsProcessing(true);
     setErrorMessage("");
 
-    const formData = new FormData(
-      event.currentTarget
-    );
+    const formData = new FormData(event.currentTarget);
 
-    const customerName = String(
-      formData.get("name") || ""
-    ).trim();
+    const customerName = String(formData.get("name") || "").trim();
+    const customerEmail = String(formData.get("email") || "").trim();
+    const customerPhone = String(formData.get("phone") || "").trim();
+    const province = String(formData.get("province") || "").trim();
+    const address = String(formData.get("address") || "").trim();
 
-    const customerEmail = String(
-      formData.get("email") || ""
-    ).trim();
-
-    const customerPhone = String(
-      formData.get("phone") || ""
-    ).trim();
-
-    const province = String(
-      formData.get("province") || ""
-    ).trim();
-
-    const address = String(
-      formData.get("address") || ""
-    ).trim();
-
-    const paymentMethod = String(
-      formData.get("paymentMethod") || ""
-    ).trim();
+    if (!customerName || !customerEmail || !customerPhone || !province || !address) {
+      setErrorMessage("Debes completar todos los datos de entrega.");
+      setIsProcessing(false);
+      return;
+    }
 
     const requestedItems = cart.map((item) => ({
       product_id: Number(item.id),
@@ -86,18 +85,15 @@ export default function Checkout() {
     }));
 
     try {
-      const { data, error } = await supabase.rpc(
-        "create_authenticated_order",
-        {
-          customer_name_input: customerName,
-          customer_email_input: customerEmail,
-          customer_phone_input: customerPhone,
-          province_input: province,
-          address_input: address,
-          payment_method_input: paymentMethod,
-          items_input: requestedItems,
-        }
-      );
+      const { data, error } = await supabase.rpc("create_authenticated_order", {
+        customer_name_input: customerName,
+        customer_email_input: customerEmail,
+        customer_phone_input: customerPhone,
+        province_input: province,
+        address_input: address,
+        payment_method_input: PAYMENT_METHOD,
+        items_input: requestedItems,
+      });
 
       if (error) {
         throw new Error(error.message);
@@ -109,9 +105,7 @@ export default function Checkout() {
         );
       }
 
-      const confirmedProducts = (
-        data.items ?? []
-      ).map((item) => ({
+      const confirmedProducts = (data.items ?? []).map((item) => ({
         id: item.product_id,
         name: item.product_name,
         category: item.category,
@@ -128,23 +122,21 @@ export default function Checkout() {
         phone: data.customer_phone,
         province: data.province,
         address: data.address,
-        paymentMethod: data.payment_method,
+        paymentMethod: PAYMENT_METHOD,
         total: Number(data.total),
         products: confirmedProducts,
         status: data.status,
-        date: new Date(
-          data.created_at
-        ).toLocaleString("es-CR"),
+        date: new Date(data.created_at).toLocaleString("es-CR"),
         isGuest: false,
       };
+
+      await sendOrderEmail(order);
 
       clearCart();
 
       navigate("/confirmacion", {
         replace: true,
-        state: {
-          order,
-        },
+        state: { order },
       });
     } catch (error) {
       setErrorMessage(
@@ -170,14 +162,9 @@ export default function Checkout() {
       <main style={pageStyle}>
         <h1>Selecciona cómo continuar</h1>
 
-        <p>
-          Debes iniciar sesión, crear una cuenta o
-          continuar como invitado.
-        </p>
+        <p>Debes iniciar sesión, crear una cuenta o continuar como invitado.</p>
 
-        <Link to="/continuar-compra">
-          Ver opciones para continuar
-        </Link>
+        <Link to="/continuar-compra">Ver opciones para continuar</Link>
       </main>
     );
   }
@@ -187,38 +174,24 @@ export default function Checkout() {
       <main style={pageStyle}>
         <h1>No hay productos para procesar</h1>
 
-        <p>
-          Debes agregar al menos una planta antes de
-          realizar un pedido.
-        </p>
+        <p>Debes agregar al menos una planta antes de realizar un pedido.</p>
 
-        <Link to="/catalogo">
-          Ir al catálogo
-        </Link>
+        <Link to="/catalogo">Ir al catálogo</Link>
       </main>
     );
   }
 
   return (
     <main style={pageStyle}>
-      <Link to="/carrito">
-        ← Volver al carrito
-      </Link>
+      <Link to="/carrito">← Volver al carrito</Link>
 
       <h1>Finalizar pedido</h1>
 
-      <p>
-        Completa tus datos para registrar el pedido.
-      </p>
+      <p>Completa tus datos para registrar el pedido.</p>
 
-      <form
-        onSubmit={handleSubmit}
-        style={formStyle}
-      >
+      <form onSubmit={handleSubmit} style={formStyle}>
         <div style={fieldStyle}>
-          <label htmlFor="name">
-            Nombre completo
-          </label>
+          <label htmlFor="name">Nombre completo</label>
 
           <input
             id="name"
@@ -231,9 +204,7 @@ export default function Checkout() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="email">
-            Correo electrónico
-          </label>
+          <label htmlFor="email">Correo electrónico</label>
 
           <input
             id="email"
@@ -249,16 +220,11 @@ export default function Checkout() {
             }}
           />
 
-          <small>
-            Se utilizará el correo asociado con tu
-            cuenta.
-          </small>
+          <small>Se utilizará el correo asociado con tu cuenta.</small>
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="phone">
-            Teléfono
-          </label>
+          <label htmlFor="phone">Teléfono</label>
 
           <input
             id="phone"
@@ -271,9 +237,7 @@ export default function Checkout() {
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="province">
-            Provincia
-          </label>
+          <label htmlFor="province">Provincia</label>
 
           <select
             id="province"
@@ -286,46 +250,25 @@ export default function Checkout() {
               Selecciona una provincia
             </option>
 
-            <option value="San José">
-              San José
-            </option>
-
-            <option value="Alajuela">
-              Alajuela
-            </option>
-
-            <option value="Cartago">
-              Cartago
-            </option>
-
-            <option value="Heredia">
-              Heredia
-            </option>
-
-            <option value="Guanacaste">
-              Guanacaste
-            </option>
-
-            <option value="Puntarenas">
-              Puntarenas
-            </option>
-
-            <option value="Limón">
-              Limón
-            </option>
+            <option value="San José">San José</option>
+            <option value="Alajuela">Alajuela</option>
+            <option value="Cartago">Cartago</option>
+            <option value="Heredia">Heredia</option>
+            <option value="Guanacaste">Guanacaste</option>
+            <option value="Puntarenas">Puntarenas</option>
+            <option value="Limón">Limón</option>
           </select>
         </div>
 
         <div style={fieldStyle}>
-          <label htmlFor="address">
-            Dirección exacta
-          </label>
+          <label htmlFor="address">Dirección exacta de entrega</label>
 
           <textarea
             id="address"
             name="address"
             rows="4"
             required
+            placeholder="Ej: distrito, barrio, señas exactas, casa o apartamento"
             style={{
               ...inputStyle,
               resize: "vertical",
@@ -333,35 +276,26 @@ export default function Checkout() {
           />
         </div>
 
-        <div style={fieldStyle}>
-          <label htmlFor="paymentMethod">
-            Método de pago
-          </label>
+        <section style={paymentBoxStyle}>
+          <h2 style={{ marginTop: 0 }}>Pago por SINPE</h2>
 
-          <select
-            id="paymentMethod"
-            name="paymentMethod"
-            required
-            defaultValue=""
-            style={inputStyle}
-          >
-            <option value="" disabled>
-              Selecciona un método
-            </option>
+          <p>
+            <strong>Método de pago:</strong> {PAYMENT_METHOD}
+          </p>
 
-            <option value="SINPE Móvil simulado">
-              SINPE Móvil simulado
-            </option>
+          <p>
+            <strong>Número SINPE:</strong> {SINPE_PHONE}
+          </p>
 
-            <option value="Transferencia simulada">
-              Transferencia simulada
-            </option>
+          <p>
+            <strong>Enviar comprobante a:</strong> {PAYMENT_RECEIPT_EMAIL}
+          </p>
 
-            <option value="Pago contra entrega">
-              Pago contra entrega
-            </option>
-          </select>
-        </div>
+          <p style={paymentNoticeStyle}>
+            Al confirmar el pedido, se mostrará el detalle que debes colocar en
+            el SINPE. El pedido quedará pendiente hasta que el pago sea revisado.
+          </p>
+        </section>
 
         <section style={summaryStyle}>
           <h2>Resumen del pedido</h2>
@@ -369,47 +303,32 @@ export default function Checkout() {
           {cart.map((item) => (
             <p key={item.id}>
               {item.name} × {item.quantity} — ₡
-              {(
-                Number(item.price) *
-                Number(item.quantity)
-              ).toLocaleString("es-CR")}
+              {(Number(item.price) * Number(item.quantity)).toLocaleString(
+                "es-CR"
+              )}
             </p>
           ))}
 
-          <strong>
-            Total estimado: ₡
-            {estimatedTotal.toLocaleString(
-              "es-CR"
-            )}
-          </strong>
+          <strong>Total estimado: ₡{estimatedTotal.toLocaleString("es-CR")}</strong>
 
           <p style={verificationNoticeStyle}>
-            El precio final y la disponibilidad se
-            verificarán en Supabase al confirmar el
-            pedido.
+            El precio final y la disponibilidad se verificarán en Supabase al
+            confirmar el pedido.
           </p>
         </section>
 
-        {errorMessage && (
-          <p style={errorStyle}>
-            {errorMessage}
-          </p>
-        )}
+        {errorMessage && <p style={errorStyle}>{errorMessage}</p>}
 
         <button
           type="submit"
           disabled={isProcessing}
           style={{
             ...submitButtonStyle,
-            cursor: isProcessing
-              ? "not-allowed"
-              : "pointer",
+            cursor: isProcessing ? "not-allowed" : "pointer",
             opacity: isProcessing ? 0.7 : 1,
           }}
         >
-          {isProcessing
-            ? "Verificando y guardando..."
-            : "Confirmar pedido"}
+          {isProcessing ? "Verificando y guardando..." : "Confirmar pedido"}
         </button>
       </form>
     </main>
@@ -440,6 +359,21 @@ const inputStyle = {
   marginTop: "8px",
   padding: "12px",
   boxSizing: "border-box",
+};
+
+const paymentBoxStyle = {
+  marginTop: "24px",
+  padding: "20px",
+  backgroundColor: "#eaf4ec",
+  border: "2px solid #315d40",
+  borderRadius: "8px",
+};
+
+const paymentNoticeStyle = {
+  marginBottom: 0,
+  padding: "12px",
+  backgroundColor: "white",
+  borderRadius: "6px",
 };
 
 const summaryStyle = {

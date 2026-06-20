@@ -19,6 +19,26 @@ export default function CheckoutInvitado() {
     0
   );
 
+  async function sendOrderEmail(order) {
+    try {
+      const response = await fetch("/api/send-order-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ order }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error("No se pudo enviar el correo del pedido:", result);
+      }
+    } catch (emailError) {
+      console.error("No se pudo enviar el correo del pedido:", emailError);
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -102,6 +122,8 @@ export default function CheckoutInvitado() {
         date: new Date(data.created_at ?? new Date()).toLocaleString("es-CR"),
         isGuest: true,
       };
+
+      await sendOrderEmail(order);
 
       clearCart();
 
