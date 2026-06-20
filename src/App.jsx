@@ -1,332 +1,341 @@
-import { useEffect, useState } from "react";
-import "./App.css";
-
-import {
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-} from "react-router-dom";
-
-import { supabase } from "./lib/supabase.js";
-
-import Catalogo from "./pages/Catalogo.jsx";
-import Carrito from "./pages/Carrito.jsx";
-import Checkout from "./pages/Checkout.jsx";
-import Confirmacion from "./pages/Confirmacion.jsx";
-import ContinuarCompra from "./pages/ContinuarCompra.jsx";
-import Registro from "./pages/Registro.jsx";
-import Login from "./pages/Login.jsx";
-import MiCuenta from "./pages/MiCuenta.jsx";
-import MisPedidos from "./pages/MisPedidos.jsx";
-import CheckoutInvitado from "./pages/CheckoutInvitado.jsx";
-import ConsultarPedido from "./pages/ConsultarPedido.jsx";
-import ProductoDetalle from "./pages/ProductoDetalle.jsx";
-import Admin from "./pages/Admin.jsx";
-
+import { Routes, Route, Link } from "react-router-dom";
 import { useCart } from "./context/CartContext.jsx";
 import { useAuth } from "./context/AuthContext.jsx";
+
+import Catalogo from "./pages/Catalogo.jsx";
+import ProductoDetalle from "./pages/ProductoDetalle.jsx";
+import Carrito from "./pages/Carrito.jsx";
+import ContinuarCompra from "./pages/ContinuarCompra.jsx";
+import Checkout from "./pages/Checkout.jsx";
+import CheckoutInvitado from "./pages/CheckoutInvitado.jsx";
+import Confirmacion from "./pages/Confirmacion.jsx";
+import Login from "./pages/Login.jsx";
+import Registro from "./pages/Registro.jsx";
+import MiCuenta from "./pages/MiCuenta.jsx";
+import MisPedidos from "./pages/MisPedidos.jsx";
+import ConsultarPedido from "./pages/ConsultarPedido.jsx";
+import Admin from "./pages/Admin.jsx";
+import RecuperarPassword from "./pages/RecuperarPassword.jsx";
+import ActualizarPassword from "./pages/ActualizarPassword.jsx";
+
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import AdminRoute from "./components/AdminRoute.jsx";
 
 function Inicio() {
-  const { user, profile, signOut, isLoadingAuth } = useAuth();
+  return (
+    <main style={homeStyle}>
+      <section style={heroStyle}>
+        <div>
+          <p style={eyebrowStyle}>Tienda virtual de plantas</p>
+
+          <h1 style={titleStyle}>Herbalist</h1>
+
+          <p style={subtitleStyle}>
+            Plantas para interiores, regalos verdes y espacios más naturales.
+          </p>
+
+          <div style={actionsStyle}>
+            <Link to="/catalogo" style={primaryButtonStyle}>
+              Explorar plantas
+            </Link>
+
+            <Link to="/carrito" style={secondaryButtonStyle}>
+              Ver carrito
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function NotFound() {
+  return (
+    <main style={pageStyle}>
+      <section style={cardStyle}>
+        <h1>Página no encontrada</h1>
+
+        <p>La ruta que intentaste abrir no existe en Herbalist.</p>
+
+        <Link to="/" style={primaryButtonStyle}>
+          Volver al inicio
+        </Link>
+      </section>
+    </main>
+  );
+}
+
+export default function App() {
   const { cart } = useCart();
-  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
 
-  const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [productsError, setProductsError] = useState("");
-
-  const userName =
-    user?.user_metadata?.name || user?.email || "Usuario";
-
-  const cartItemCount = cart.reduce(
-    (total, item) => total + item.quantity,
+  const totalItems = cart.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
     0
   );
 
-  useEffect(() => {
-    async function loadFeaturedProducts() {
-      setIsLoadingProducts(true);
-      setProductsError("");
-
-      const { data, error } = await supabase
-        .from("products")
-        .select(`
-          id,
-          name,
-          category,
-          description,
-          price,
-          stock,
-          image_url
-        `)
-        .eq("is_active", true)
-        .gt("stock", 0)
-        .order("created_at", { ascending: true })
-        .limit(3);
-
-      if (error) {
-        setProductsError(
-          `No se pudieron cargar las plantas destacadas: ${error.message}`
-        );
-        setIsLoadingProducts(false);
-        return;
-      }
-
-      setFeaturedProducts(
-        (data ?? []).map((product) => ({
-          ...product,
-          price: Number(product.price),
-          stock: Number(product.stock),
-        }))
-      );
-
-      setIsLoadingProducts(false);
-    }
-
-    loadFeaturedProducts();
-  }, []);
-
   async function handleSignOut() {
-    try {
-      await signOut();
-      navigate("/");
-    } catch (error) {
-      alert(`No se pudo cerrar la sesión: ${error.message}`);
-    }
+    await signOut();
   }
 
   return (
-    <div className="app">
-      <header className="header">
-        <Link to="/" className="logo">
+    <>
+      <header style={headerStyle}>
+        <Link to="/" style={logoStyle}>
           Herbalist
         </Link>
 
-        <nav className="navigation">
-          <a href="#inicio">Inicio</a>
-          <Link to="/catalogo">Plantas</Link>
-          <a href="#cuidados">Cuidados</a>
-          <Link to="/consultar-pedido">Consultar pedido</Link>
+        <nav style={navStyle}>
+          <Link to="/catalogo" style={navLinkStyle}>
+            Catálogo
+          </Link>
 
-          {isLoadingAuth ? (
-            <span>Revisando sesión...</span>
-          ) : user ? (
+          <Link to="/carrito" style={navLinkStyle}>
+            Carrito ({totalItems})
+          </Link>
+
+          {user && (
             <>
-              <Link to="/mi-cuenta">Hola, {userName}</Link>
-              <Link to="/mis-pedidos">Mis pedidos</Link>
+              <Link to="/mi-cuenta" style={navLinkStyle}>
+                Mi cuenta
+              </Link>
 
-              {profile?.role === "admin" && (
-                <Link to="/admin">Admin</Link>
-              )}
+              <Link to="/mis-pedidos" style={navLinkStyle}>
+                Mis pedidos
+              </Link>
+            </>
+          )}
 
-              <button
-                type="button"
-                onClick={handleSignOut}
-                style={{
-                  padding: 0,
-                  border: "none",
-                  background: "none",
-                  color: "#34453a",
-                  cursor: "pointer",
-                  fontWeight: "600",
-                }}
-              >
-                Cerrar sesión
-              </button>
+          {profile?.role === "admin" && (
+            <Link to="/admin" style={adminLinkStyle}>
+              Admin
+            </Link>
+          )}
+
+          {!user ? (
+            <>
+              <Link to="/login" style={navLinkStyle}>
+                Iniciar sesión
+              </Link>
+
+              <Link to="/registro" style={registerLinkStyle}>
+                Crear cuenta
+              </Link>
             </>
           ) : (
-            <Link to="/login">Iniciar sesión</Link>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              style={logoutButtonStyle}
+            >
+              Cerrar sesión
+            </button>
           )}
-
-          {user && cartItemCount > 0 && (
-            <Link to="/checkout">Finalizar compra</Link>
-          )}
-
-          <Link to="/carrito">Carrito ({cartItemCount})</Link>
         </nav>
       </header>
 
-      <main>
-        <section className="hero" id="inicio">
-          <div className="hero-content">
-            <p className="eyebrow">Naturaleza para cada espacio</p>
-            <h1>Encuentra la planta ideal para tu hogar</h1>
+      <Routes>
+        <Route path="/" element={<Inicio />} />
 
-            <p className="hero-description">
-              Explora plantas de interior, suculentas y accesorios para llenar
-              tus espacios de vida.
-            </p>
+        <Route path="/catalogo" element={<Catalogo />} />
 
-            <Link to="/catalogo" className="primary-button">
-              Explorar plantas
-            </Link>
-          </div>
-        </section>
+        <Route path="/producto/:id" element={<ProductoDetalle />} />
 
-        <section className="products-section" id="plantas">
-          <div className="section-heading">
-            <p>Nuestra selección</p>
-            <h2>Plantas destacadas</h2>
-          </div>
+        <Route path="/carrito" element={<Carrito />} />
 
-          <div className="product-grid">
-            {isLoadingProducts && <p>Cargando plantas destacadas...</p>}
+        <Route path="/continuar-compra" element={<ContinuarCompra />} />
 
-            {productsError && (
-              <p
-                style={{
-                  padding: "14px",
-                  borderRadius: "6px",
-                  backgroundColor: "#fde8e8",
-                  color: "#8a1c1c",
-                }}
-              >
-                {productsError}
-              </p>
-            )}
+        <Route path="/checkout-invitado" element={<CheckoutInvitado />} />
 
-            {!isLoadingProducts &&
-              !productsError &&
-              featuredProducts.length === 0 && (
-                <p>Actualmente no hay plantas destacadas disponibles.</p>
-              )}
+        <Route
+          path="/checkout"
+          element={
+            <PrivateRoute>
+              <Checkout />
+            </PrivateRoute>
+          }
+        />
 
-            {featuredProducts.map((product) => (
-              <article className="product-card" key={product.id}>
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    style={{
-                      width: "100%",
-                      height: "220px",
-                      objectFit: "cover",
-                      borderRadius: "8px",
-                    }}
-                  />
-                ) : (
-                  <div className="product-image">
-                    <span>Fotografía de la planta</span>
-                  </div>
-                )}
+        <Route path="/confirmacion" element={<Confirmacion />} />
 
-                <div className="product-information">
-                  <p className="product-category">{product.category}</p>
-                  <h3>{product.name}</h3>
+        <Route path="/login" element={<Login />} />
 
-                  {product.description && (
-                    <p style={{ color: "#59655c", lineHeight: 1.5 }}>
-                      {product.description}
-                    </p>
-                  )}
+        <Route path="/registro" element={<Registro />} />
 
-                  <p className="product-price">
-                    ₡{product.price.toLocaleString("es-CR")}
-                  </p>
+        <Route
+          path="/mi-cuenta"
+          element={
+            <PrivateRoute>
+              <MiCuenta />
+            </PrivateRoute>
+          }
+        />
 
-                  <p style={{ color: "#315d40", fontWeight: "bold" }}>
-                    Disponibles: {product.stock}
-                  </p>
+        <Route
+          path="/mis-pedidos"
+          element={
+            <PrivateRoute>
+              <MisPedidos />
+            </PrivateRoute>
+          }
+        />
 
-                  <Link
-                    to="/catalogo"
-                    style={{
-                      display: "inline-block",
-                      width: "100%",
-                      padding: "12px",
-                      boxSizing: "border-box",
-                      borderRadius: "6px",
-                      backgroundColor: "#315d40",
-                      color: "white",
-                      textAlign: "center",
-                      textDecoration: "none",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Ver en el catálogo
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+        <Route path="/consultar-pedido" element={<ConsultarPedido />} />
 
-        <section className="care-section" id="cuidados">
-          <div>
-            <p className="eyebrow">Aprende con Herbalist</p>
-            <h2>Cuida mejor tus plantas</h2>
+        <Route path="/recuperar-password" element={<RecuperarPassword />} />
 
-            <p>
-              Encuentra recomendaciones de iluminación, riego y mantenimiento
-              para mantener tus plantas saludables.
-            </p>
-          </div>
-        </section>
-      </main>
+        <Route path="/actualizar-password" element={<ActualizarPassword />} />
 
-      <footer className="footer">
-        <h2>Herbalist</h2>
-        <p>Proyecto académico de comercio electrónico.</p>
-      </footer>
-    </div>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          }
+        />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }
 
-function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Inicio />} />
-      <Route path="/catalogo" element={<Catalogo />} />
-      <Route path="/producto/:id" element={<ProductoDetalle />} />
-      <Route path="/carrito" element={<Carrito />} />
-      <Route path="/continuar-compra" element={<ContinuarCompra />} />
-      <Route path="/registro" element={<Registro />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/checkout-invitado" element={<CheckoutInvitado />} />
+const headerStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "20px",
+  padding: "18px 40px",
+  backgroundColor: "white",
+  borderBottom: "1px solid #d9e0d5",
+  position: "sticky",
+  top: 0,
+  zIndex: 10,
+  flexWrap: "wrap",
+};
 
-      <Route
-        path="/checkout"
-        element={
-          <PrivateRoute>
-            <Checkout />
-          </PrivateRoute>
-        }
-      />
+const logoStyle = {
+  color: "#315d40",
+  fontSize: "1.5rem",
+  fontWeight: "bold",
+  textDecoration: "none",
+};
 
-      <Route
-        path="/mi-cuenta"
-        element={
-          <PrivateRoute>
-            <MiCuenta />
-          </PrivateRoute>
-        }
-      />
+const navStyle = {
+  display: "flex",
+  gap: "14px",
+  alignItems: "center",
+  flexWrap: "wrap",
+};
 
-      <Route
-        path="/mis-pedidos"
-        element={
-          <PrivateRoute>
-            <MisPedidos />
-          </PrivateRoute>
-        }
-      />
+const navLinkStyle = {
+  color: "#315d40",
+  textDecoration: "none",
+  fontWeight: "bold",
+};
 
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
-            <Admin />
-          </AdminRoute>
-        }
-      />
+const registerLinkStyle = {
+  padding: "9px 13px",
+  backgroundColor: "#315d40",
+  color: "white",
+  textDecoration: "none",
+  borderRadius: "6px",
+  fontWeight: "bold",
+};
 
-      <Route path="/confirmacion" element={<Confirmacion />} />
-      <Route path="/consultar-pedido" element={<ConsultarPedido />} />
-    </Routes>
-  );
-}
+const adminLinkStyle = {
+  padding: "9px 13px",
+  backgroundColor: "#d4aa28",
+  color: "#2f2a16",
+  textDecoration: "none",
+  borderRadius: "6px",
+  fontWeight: "bold",
+};
 
-export default App;
+const logoutButtonStyle = {
+  padding: "9px 13px",
+  border: "1px solid #315d40",
+  borderRadius: "6px",
+  backgroundColor: "white",
+  color: "#315d40",
+  fontWeight: "bold",
+  cursor: "pointer",
+};
+
+const homeStyle = {
+  minHeight: "calc(100vh - 74px)",
+  backgroundColor: "#eef3e9",
+};
+
+const heroStyle = {
+  minHeight: "calc(100vh - 74px)",
+  display: "flex",
+  alignItems: "center",
+  padding: "60px 40px",
+  background:
+    "linear-gradient(120deg, rgba(238,243,233,1) 0%, rgba(223,233,220,1) 100%)",
+};
+
+const eyebrowStyle = {
+  margin: "0 0 12px",
+  color: "#315d40",
+  fontWeight: "bold",
+  textTransform: "uppercase",
+  letterSpacing: "1px",
+};
+
+const titleStyle = {
+  margin: 0,
+  color: "#244d31",
+  fontSize: "4rem",
+};
+
+const subtitleStyle = {
+  maxWidth: "560px",
+  color: "#4d5c4f",
+  fontSize: "1.25rem",
+  lineHeight: 1.5,
+};
+
+const actionsStyle = {
+  display: "flex",
+  gap: "14px",
+  marginTop: "28px",
+  flexWrap: "wrap",
+};
+
+const primaryButtonStyle = {
+  display: "inline-block",
+  padding: "13px 18px",
+  backgroundColor: "#315d40",
+  color: "white",
+  textDecoration: "none",
+  borderRadius: "6px",
+  fontWeight: "bold",
+};
+
+const secondaryButtonStyle = {
+  display: "inline-block",
+  padding: "13px 18px",
+  backgroundColor: "white",
+  color: "#315d40",
+  textDecoration: "none",
+  borderRadius: "6px",
+  fontWeight: "bold",
+  border: "1px solid #315d40",
+};
+
+const pageStyle = {
+  minHeight: "100vh",
+  padding: "50px 20px",
+  backgroundColor: "#eef3e9",
+};
+
+const cardStyle = {
+  maxWidth: "600px",
+  margin: "0 auto",
+  padding: "35px",
+  backgroundColor: "white",
+  borderRadius: "10px",
+};
